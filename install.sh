@@ -1,6 +1,7 @@
 #!/bin/bash
 BAK_DIR=$(pwd)
 set -e
+unset FLOATZONE_MODE
 
 #Check we loaded env.sh
 if [ -z $FLOATZONE_C ]
