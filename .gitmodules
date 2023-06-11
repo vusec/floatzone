@@ -1,3 +1,6 @@
 [submodule "xed"]
 	path = xed
 	url = https://github.com/intelxed/xed.git
+[submodule "floatzone-llvm-project"]
+	path = floatzone-llvm-project
+	url = https://github.com/vusec/floatzone-llvm-project.git
