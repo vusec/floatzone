@@ -4,3 +4,6 @@
 [submodule "floatzone-llvm-project"]
 	path = floatzone-llvm-project
 	url = https://github.com/vusec/floatzone-llvm-project.git
+[submodule "mbuild"]
+	path = mbuild
+	url = https://github.com/intelxed/mbuild.git
