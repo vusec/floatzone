@@ -24,26 +24,12 @@ export FLOATZONE_XED_INC_OBJ=$FLOATZONE_XED/obj/
 
 export WRAP_DIR=$FLOATZONE_TOP/runtime/ 
 export FLOATZONE_LIBWRAP_SO=$WRAP_DIR/libwrap.so
-#
-#export FLOATZONE_SPEC06=$FLOATZONE_TOP/spec2006
-#export FLOATZONE_SPEC06_ISO=$FLOATZONE_TOP/spec2006.iso
-#export FLOATZONE_SPEC17=$FLOATZONE_TOP/spec2017
-#export FLOATZONE_SPEC17_ISO=$FLOATZONE_TOP/spec2017.iso
-#
-#export FLOATZONE_INFRA=$FLOATZONE_TOP/instrumentation-infra-floatzone/
-#
-#export REZZAN_TOP=$FLOATZONE_TOP/rezzan/
-#export REZZAN_BUILD=$REZZAN_TOP/build
-#export REZZAN_CC=$REZZAN_BUILD/clangwrapper
-#export REZZAN_CXX=$REZZAN_BUILD/clangwrapper++
-#
-#export AFLPP_FLOATZONE=$FLOATZONE_TOP/AFL++FloatZone/
-#export AFLPP_ASANMM=$FLOATZONE_TOP/AFL++ASan--/
-#export AFLPP_REZZAN=$FLOATZONE_TOP/AFL++rezzan/
-#
-#if ! grep performance /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor > /dev/null
-#then
-#  echo "performance" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-#  echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
-#fi
 
+export FLOATZONE_SPEC06=$FLOATZONE_TOP/spec2006
+export FLOATZONE_SPEC17=$FLOATZONE_TOP/spec2017
+
+export FLOATZONE_INFRA=$FLOATZONE_TOP/instrumentation-infra/
+
+#Suggested for better benchmarking
+#echo "performance" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+#echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
