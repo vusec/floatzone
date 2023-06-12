@@ -1,3 +1,31 @@
+/*
+FloatZone runtime wrapper. Used to perform the following tasks:
+ - Add SIGFPE handler
+ - Handle SIGFPE to confirm the presence of memory violations
+ - Manage redzone insertion/deletion for heap + Quarantine
+ - Intercept libc functions (e.g. memcpy, memset, etc.) to perform the
+   sanitzer checks 
+
+TODO we do not intercept all libc functions, but we cover the most important:
+ - memcmp
+ - memcpy
+ - memmove
+ - memset
+ - printf (partially supported)
+ - puts
+ - snprintf
+ - strcat
+ - strcmp
+ - strcpy
+ - strlen
+ - strncat
+ - strncmp
+ - strncpy
+ - strnlen
+ - wcscpy
+*/
+
+
 #define _GNU_SOURCE // for non-POSIX RTLD_NEXT
 #include <dlfcn.h>
 #include <stdint.h>
@@ -74,10 +102,6 @@ void* __libc_calloc(size_t nmemb, size_t size);
 void* __libc_realloc(void* ptr, size_t size);
 void* __libc_free(void* ptr);
 
-//TODO what other libc function should we intercept?
-// - atoi
-// - atol
-// - strtol
 
 // quarantine
 #if ENABLE_QUARANTINE == 1
@@ -143,7 +167,7 @@ void add_to_quarantine(void* ptr, size_t size)
 {
   append_to_list(ptr, size);
 
-  // XXX: lock to read quarantine_size?
+  //TODO: lock to read quarantine_size?
   while(quarantine_size > QUARANTINE_SIZE_BYTES){
     pop_last_from_list();
   }
@@ -732,7 +756,7 @@ Return:
 - NULL in case of error, (op_len is set to 0)
 
 Note: When I wrote this code only God and I understood what it did,
-Now only God knows
+Now only God knows.
  */
 void* get_fault_addr(uint8_t *op, int *op_len, ucontext_t *uc)
 {
@@ -902,7 +926,15 @@ const uint8_t epilog[] = {
     0x41, 0x59, 0x41, 0x58, 0x5d, 0x5e, 0x5f, 0x5a, 0x59, 0x5b, 0x58, 0xc3
 };
 
-int get_ins_len_and_reg_zero(uint8_t *op, ucontext_t *uc) {
+/*
+This is a terrible piece of code, but there are no other way around (I guess).
+This code disassemble the instruction present at `op` and returns its opcode
+length. This is needed since we need to skip the faulting SIGFPE instruction.
+To ensure we do not affect original execution, we re-execute the faulting
+instruction in an environment without FTZ enabled. This achieved with a
+terrible trick of doing some sort of JIT'ing.
+*/
+int get_ins_len_and_re_execute(uint8_t *op, ucontext_t *uc) {
     static uint8_t *rwx;
     static int first_time = 1;
     xed_state_t dstate;
@@ -1038,69 +1070,14 @@ void handler(int sig, siginfo_t* si, void* vcontext)
 #if COUNT_EXCEPTIONS == 1
         except_cnt_underflow++;
 #endif
-        op_len = get_ins_len_and_reg_zero(fault_rip, uc);
+        op_len = get_ins_len_and_re_execute(fault_rip, uc);
         goto false_positive;
     }
-    //if( (*(uint32_t *)fault_ptr) != FLOAT_MAGIC_POISON) goto false_positive;
-    //TODO Probably useless
+    
+    //Probably useless
     if( (*(uint32_t *)fault_ptr) != FLOAT_MAGIC_POISON && 
         (*(uint32_t *)fault_ptr) != FLOAT_MAGIC_POISON_PRE) goto false_positive;
 
-#if 0
-    //TODO probabilistic check is good enough?
-    //TODO page boundary check
-    int found = 1;
-    for(int i=1; i<REDZONE_SIZE; i++) { // XXX: +1: search further to catch redzones > 16 that imply F
-        if (*(fault_ptr + i) == FLOAT_MAGIC_POISON_BYTE) found++;
-        else break;
-    }
-    for(int i=1; i<REDZONE_SIZE; i++) { // XXX: +1: search further to catch redzones > 16 that imply FP
-        if (*(fault_ptr - i) == FLOAT_MAGIC_POISON_BYTE) found++;
-        else break;
-    }
-    if(found != REDZONE_SIZE) goto false_positive;
-#endif
-
-#if 0
-    int found = -1;
-    for(int i=0; i<REDZONE_SIZE; i++) {
-        if (*(fault_ptr - i) == FLOAT_MAGIC_POISON_PRE_BYTE) {
-            found = i;
-            break;
-        }
-    }
-    if(found == -1) goto false_positive;
-    for(int i=1; i<REDZONE_SIZE; i++) {
-        if (*(fault_ptr - found + i) != FLOAT_MAGIC_POISON_BYTE) goto false_positive;
-    }
-    //TODO not ideal we need to fix this (this is wrong?)
-    if (fault_ptr[REDZONE_SIZE - found] == FLOAT_MAGIC_POISON_BYTE) goto false_positive;
-#endif
-
-#if 0
-    uint8_t *ptr = fault_ptr;
-    //Move ptr to the left until we find 8b
-    for(int i=0; i<REDZONE_SIZE; i++) {
-        if (*ptr != FLOAT_MAGIC_POISON_BYTE) { 
-            break;
-        }
-        ptr--;
-    }
-
-    int needed = 16;
-    if(*ptr == FLOAT_MAGIC_POISON_PRE_BYTE) {
-        needed = 15;
-    }
-    ptr++;
-
-    for(int i=0; i<needed; i++) {
-        if (ptr[i] != FLOAT_MAGIC_POISON_BYTE) { 
-            goto false_positive;
-        }
-    }
-#endif
-
-#if 1
     uint8_t *ptr = fault_ptr;
 
     // New Improved Addition: if the fault value is 0x8b8b8b89, we should scan right to confirm a redzone
@@ -1117,37 +1094,35 @@ void handler(int sig, siginfo_t* si, void* vcontext)
             }
         }
     }
-    else{
-    //Let's go left until we find something that is not 8b
-    //if it is 89 -> true positive, or false positive containing 89 8b 8b 8b 8b ...
-    //if it is not 89 false positive
-    //also make sure we have at least 15 8b on the right
+    else {
+        //Let's go left until we find something that is not 8b
+        //if it is 89 -> true positive, or false positive containing 89 8b 8b 8b 8b ...
+        //if it is not 89 false positive
+        //also make sure we have at least 15 8b on the right
 
-    int found = 0;
-    while(*ptr == FLOAT_MAGIC_POISON_BYTE) { 
-        ptr--;
-        found++;
-    }
-
-    //Now ptr pointing to something that is not 8b
-    if(*ptr == FLOAT_MAGIC_POISON_PRE_BYTE) {
-        //Ok we need 15 8b on the right from current ptr
-        //for(int i = found; i < REDZONE_SIZE; i++) {
-        for(int i = 1; i < REDZONE_SIZE; i++) {
-            if (*(ptr+i) != FLOAT_MAGIC_POISON_BYTE) {
-#if COUNT_EXCEPTIONS == 1
-                except_cnt_vaddss_skip++;
-#endif
-                goto false_positive;
-            }
+        int found = 0;
+        while(*ptr == FLOAT_MAGIC_POISON_BYTE) { 
+            ptr--;
+            found++;
         }
-    } else {
+
+        //Now ptr pointing to something that is not 8b
+        if(*ptr == FLOAT_MAGIC_POISON_PRE_BYTE) {
+            //Ok we need 15 8b on the right from current ptr
+            for(int i = 1; i < REDZONE_SIZE; i++) {
+                if (*(ptr+i) != FLOAT_MAGIC_POISON_BYTE) {
 #if COUNT_EXCEPTIONS == 1
-        except_cnt_vaddss_skip++;
+                    except_cnt_vaddss_skip++;
 #endif
-        goto false_positive;
-    }
+                    goto false_positive;
+                }
+            }
+        } else {
+#if COUNT_EXCEPTIONS == 1
+            except_cnt_vaddss_skip++;
 #endif
+            goto false_positive;
+        }
     }
 
     // fault
