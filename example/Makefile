@@ -13,4 +13,4 @@ buggy_floatzone:
 	${FLOATZONE_C} buggy.c -o buggy_floatzone_run_base ${CFLAGS}
 
 clean:
-	rm -f buggy buggy_asan buggy_floatzone
+	rm -f buggy buggy_asan buggy_floatzone_run_base
