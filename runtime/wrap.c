@@ -71,7 +71,7 @@ TODO we do not intercept all libc functions, but we cover the most important:
 // MODE: catch segmentation faults (Juliet)
 #define CATCH_SEGFAULT 0
 // MODE: AFL++ requires abort() for bugs
-#define FUZZ_MODE 1
+#define FUZZ_MODE 0
 #define QUARANTINE_SIZE_BYTES 268435456 // 256 MB
 // quarantine max bytes / min. size of alloc == upper bound
 #define MIN_ALLOC_SIZE 40

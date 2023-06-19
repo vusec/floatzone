@@ -1,5 +1,6 @@
 #!/bin/bash
 BAK_DIR=$(pwd)
+BAK_MODE=$(FLOATZONE_MODE)
 set -e
 unset FLOATZONE_MODE
 
@@ -91,3 +92,4 @@ fi
 #fi
 #
 cd $BAK_DIR
+export FLOATZONE_MODE=$BAK_MODE
