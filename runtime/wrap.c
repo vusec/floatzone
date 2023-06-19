@@ -261,6 +261,7 @@ void __cxa_throw (void *thrown_exception, void *pvtinfo, void (*dest)(void *))
 // we do sp-8 to make sure the return address of clear_stack_on_jump remains intact
 void __attribute__ ((noinline, disable_sanitizer_instrumentation)) clear_stack_on_jump(unsigned long current_sp)
 {
+    if(g_stored_sp == 0) return; // dont clear if old sp was never set yet
     memset((void*)g_stored_sp, 0, current_sp-g_stored_sp-8);
 }
 
