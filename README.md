@@ -24,7 +24,7 @@ git clone https://github.com/vusec/floatzone.git --recurse-submodules
 
 Edit `env.sh` and update `FLOATZONE_TOP` with the full path where you cloned this repository.
 
-(OPTIONAL) To run SPEC benchmarks, update also the variable `FLOATZONE_SPEC06` with the full path of your SPEC instllation.
+(OPTIONAL) To run SPEC benchmarks, update also the variable `FLOATZONE_SPEC06` with the full path of your SPEC installation.
 
 Then, load the environment in your current shell:
 ```
