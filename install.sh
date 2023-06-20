@@ -1,6 +1,6 @@
 #!/bin/bash
 BAK_DIR=$(pwd)
-BAK_MODE=$(FLOATZONE_MODE)
+BAK_MODE=$FLOATZONE_MODE
 set -e
 unset FLOATZONE_MODE
 
