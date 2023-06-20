@@ -16,7 +16,6 @@ export FLOATZONE_TOP=/home/sec23_ae/floatzone
 
 #CHANGME depending on where you installed SPEC
 export FLOATZONE_SPEC06=/home/sec23_ae/spec06
-export FLOATZONE_SPEC17=/home/sec23_ae/spec17
 
 export FLOATZONE_LLVM=$FLOATZONE_TOP/floatzone-llvm-project/llvm/
 
