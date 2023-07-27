@@ -96,7 +96,7 @@ setup.add_target(SPEC2006(
 #    force_cpu = -(NUM_OPENMP_THREADS-1) # -15 means use cores 0-15 for openMP if the binary supports it, otherwise pin to core 0
 #))
 
-# setup.add_target(Juliet(1))
+setup.add_target(Juliet(1))
 
 if __name__ == '__main__':
     setup.main()

@@ -105,6 +105,8 @@ Backtrace:
 
 ## Benchmarks
 
+### CPU SPEC
+
 To run SPEC06 benchmarks simply run the following command:
 
 ```
@@ -152,6 +154,29 @@ This is an expected output:
 ```
 
 We can see that the ASan time overhead is `205/114=79%` while FloatZone is `155/114=36%`
+
+### Juliet
+
+1. Edit `runtime/wrap.c` and set the `CATCH_SEGFAULT` macro to 1 to enable segmentation faults to also be caught (as ASan does).
+2. Enable **FloatzoneExt** by editing `env.sh` such that `FLOATZONE_MODE="floatzone double_sided just_size"`.
+3. Make sure `env.sh` is loaded via `source env.sh`
+4. Check `echo $FLOATZONE_MODE` is equal to `floatzone double_sided just_size`.
+5. Run `./install.sh` to update the shared library.
+6. Run the following commands:
+
+```
+python3 run.py run juliet floatzone_O0 --build --cwe 121
+python3 run.py run juliet floatzone_O0 --build --cwe 122
+python3 run.py run juliet floatzone_O0 --build --cwe 124
+python3 run.py run juliet floatzone_O0 --build --cwe 126
+python3 run.py run juliet floatzone_O0 --build --cwe 127
+python3 run.py run juliet floatzone_O0 --build --cwe 415
+python3 run.py run juliet floatzone_O0 --build --cwe 416
+```
+
+Note 1: Some Juliet test cases are random (their test case contains the word 'rand') and you may need to re-run multiple times for it to be caught.
+
+Note 2: Juliet needs to compile with O0, so that's why we use `floatzone_O0`
 
 
 ## Troubleshooting
